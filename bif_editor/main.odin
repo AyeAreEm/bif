@@ -7,20 +7,14 @@ import "core:strings"
 import "core:math"
 import rl "vendor:raylib"
 
-Colour :: struct {
-    r: u8,
-    g: u8,
-    b: u8,
-    a: u8,
-}
-
+current_colour := rl.Color{0, 0, 0, 255}
 last_mouse_pos := [2]f32{}
 
 get_indices_from_mouse_position :: proc(mouse_pos: rl.Vector2, grid_rec: rl.Rectangle) -> (int, int) {
     return int(mouse_pos.x - grid_rec.x), int(mouse_pos.y - grid_rec.y)
 }
 
-get_image :: proc(grid: ^[dynamic][dynamic]Colour, width: int, height: int) -> (builder: strings.Builder) {
+get_image :: proc(grid: ^[dynamic][dynamic]rl.Color, width: int, height: int) -> (builder: strings.Builder) {
     content, err := strings.builder_init(&builder)
     if err != .None {
         panic("failed to allocate string")
@@ -79,7 +73,26 @@ bezier_curve :: proc(start: [2]f32, mid: [2]f32, end: [2]f32, t: f32) -> [2]f32 
     return temp[0]
 }
 
-update :: proc(grid: ^[dynamic][dynamic]Colour, grid_rec: rl.Rectangle) {
+update :: proc(grid: ^[dynamic][dynamic]rl.Color, grid_rec: rl.Rectangle) {
+    // changing colours keybinds
+    if rl.IsKeyPressed(.R) {
+        current_colour = rl.RED
+    } else if rl.IsKeyPressed(.G) {
+        current_colour = rl.GREEN
+    } else if (rl.IsKeyDown(.LEFT_SHIFT) || rl.IsKeyDown(.RIGHT_SHIFT)) && rl.IsKeyPressed(.B) {
+        current_colour = rl.BLACK
+    } else if rl.IsKeyPressed(.B) {
+        current_colour = rl.BLUE
+    } else if (rl.IsKeyDown(.LEFT_SHIFT) || rl.IsKeyDown(.RIGHT_SHIFT)) && rl.IsKeyPressed(.P) {
+        current_colour = rl.PURPLE
+    } else if rl.IsKeyPressed(.P) {
+        current_colour = rl.PINK
+    } else if rl.IsKeyPressed(.Y) {
+        current_colour = rl.YELLOW
+    }
+
+
+
     mouse_pos := rl.GetMousePosition()
     if last_mouse_pos[0] == 0 && last_mouse_pos[1] == 0 {
         last_mouse_pos = mouse_pos
@@ -94,11 +107,11 @@ update :: proc(grid: ^[dynamic][dynamic]Colour, grid_rec: rl.Rectangle) {
         for i: f32 = 0.0; int(i) <= 1; i += 0.1 {
             bezier_point := bezier_curve([2]f32{f32(last_x), f32(last_y)}, [2]f32{f32(mp_x), f32(mp_y)}, [2]f32{f32(x), f32(y)}, i)
             if int(bezier_point.x) < int(grid_rec.width) && bezier_point.x > 0 && int(bezier_point.y) < int(grid_rec.height) && bezier_point.y > 0 {
-                grid[int(bezier_point.x)][int(bezier_point.y)] = Colour{255, 0, 0, 255}
+                grid[int(bezier_point.x)][int(bezier_point.y)] = current_colour
             }
         }
 
-        grid[x][y] = Colour{255, 0, 0, 255}
+        grid[x][y] = current_colour
     }
     if rl.IsMouseButtonDown(.RIGHT) && rl.CheckCollisionPointRec(mouse_pos, grid_rec) {
         last_x, last_y := get_indices_from_mouse_position(last_mouse_pos, grid_rec)
@@ -108,10 +121,10 @@ update :: proc(grid: ^[dynamic][dynamic]Colour, grid_rec: rl.Rectangle) {
         for i: f32 = 0.0; int(i) <= 1; i += 0.1 {
             bezier_point := bezier_curve([2]f32{f32(last_x), f32(last_y)}, [2]f32{f32(mp_x), f32(mp_y)}, [2]f32{f32(x), f32(y)}, i)
             if int(bezier_point.x) < int(grid_rec.width) && bezier_point.x > 0 && int(bezier_point.y) < int(grid_rec.height) && bezier_point.y > 0 {
-                grid[int(bezier_point.x)][int(bezier_point.y)] = Colour{255, 255, 255, 255}
+                grid[int(bezier_point.x)][int(bezier_point.y)] = rl.Color{255, 255, 255, 255}
             }
         }
-        grid[x][y] = Colour{255, 255, 255, 255}
+        grid[x][y] = rl.Color{255, 255, 255, 255}
     }
 
     if rl.IsKeyDown(.LEFT_CONTROL) && rl.IsKeyDown(.S) {
@@ -126,9 +139,9 @@ update :: proc(grid: ^[dynamic][dynamic]Colour, grid_rec: rl.Rectangle) {
     last_mouse_pos = mouse_pos
 }
 
-draw :: proc(grid: [dynamic][dynamic]Colour, grid_rec: rl.Rectangle) {
+draw :: proc(grid: [dynamic][dynamic]rl.Color, grid_rec: rl.Rectangle) {
     rl.BeginDrawing()
-    rl.ClearBackground(rl.BLACK)
+    rl.ClearBackground(current_colour)
 
     for i in 0..<int(grid_rec.height) {
         for j in 0..<int(grid_rec.width) {
@@ -145,11 +158,11 @@ main :: proc() {
     image_width := strconv.atoi(os.args[0])
     image_height := strconv.atoi(os.args[1])
 
-    grid: [dynamic][dynamic]Colour
+    grid: [dynamic][dynamic]rl.Color
     for i in 0..<image_height {
-        append(&grid, [dynamic]Colour{})
+        append(&grid, [dynamic]rl.Color{})
         for j in 0..<image_width {
-            append(&grid[i], Colour{255, 255, 255, 255})
+            append(&grid[i], rl.Color{255, 255, 255, 255})
         }
     }
 
