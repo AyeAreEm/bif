@@ -1,1 +1,3 @@
-*.exe
+bif_editor/bif_editor.exe
+bif_viewer/bif_viewer.exe
+bif_writer/bif_writer.exe
