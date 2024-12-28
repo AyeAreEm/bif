@@ -4,6 +4,7 @@ import "core:fmt"
 import "core:os"
 import "core:strconv"
 import "core:strings"
+import "core:math"
 import rl "vendor:raylib"
 
 Colour :: struct {
@@ -12,6 +13,8 @@ Colour :: struct {
     b: u8,
     a: u8,
 }
+
+last_mouse_pos := [2]f32{}
 
 get_indices_from_mouse_position :: proc(mouse_pos: rl.Vector2, grid_rec: rl.Rectangle) -> (int, int) {
     return int(mouse_pos.x - grid_rec.x), int(mouse_pos.y - grid_rec.y)
@@ -63,14 +66,51 @@ get_image :: proc(grid: ^[dynamic][dynamic]Colour, width: int, height: int) -> (
     return
 }
 
+bezier_curve :: proc(start: [2]f32, mid: [2]f32, end: [2]f32, t: f32) -> [2]f32 {
+    temp := [3][2]f32{start, mid, end}
+
+    for r := 1; r < 3; r += 1 {
+        for j := 0; j < 3 - r; j += 1 {
+            temp[j].x = (1 - t) * temp[j].x + t * temp[int(t) + 1].x;
+            temp[j].y = (1 - t) * temp[j].y + t * temp[int(t) + 1].y;
+        }
+    }
+
+    return temp[0]
+}
+
 update :: proc(grid: ^[dynamic][dynamic]Colour, grid_rec: rl.Rectangle) {
     mouse_pos := rl.GetMousePosition()
+    if last_mouse_pos[0] == 0 && last_mouse_pos[1] == 0 {
+        last_mouse_pos = mouse_pos
+    }
     x, y := get_indices_from_mouse_position(mouse_pos, grid_rec)
 
     if rl.IsMouseButtonDown(.LEFT) && rl.CheckCollisionPointRec(mouse_pos, grid_rec) {
+        last_x, last_y := get_indices_from_mouse_position(last_mouse_pos, grid_rec)
+        mp_x := (x+last_x) / 2
+        mp_y := (y+last_y) / 2
+
+        for i: f32 = 0.0; int(i) <= 1; i += 0.1 {
+            bezier_point := bezier_curve([2]f32{f32(last_x), f32(last_y)}, [2]f32{f32(mp_x), f32(mp_y)}, [2]f32{f32(x), f32(y)}, i)
+            if int(bezier_point.x) < int(grid_rec.width) && bezier_point.x > 0 && int(bezier_point.y) < int(grid_rec.height) && bezier_point.y > 0 {
+                grid[int(bezier_point.x)][int(bezier_point.y)] = Colour{255, 0, 0, 255}
+            }
+        }
+
         grid[x][y] = Colour{255, 0, 0, 255}
     }
     if rl.IsMouseButtonDown(.RIGHT) && rl.CheckCollisionPointRec(mouse_pos, grid_rec) {
+        last_x, last_y := get_indices_from_mouse_position(last_mouse_pos, grid_rec)
+        mp_x := (x+last_x) / 2
+        mp_y := (y+last_y) / 2
+
+        for i: f32 = 0.0; int(i) <= 1; i += 0.1 {
+            bezier_point := bezier_curve([2]f32{f32(last_x), f32(last_y)}, [2]f32{f32(mp_x), f32(mp_y)}, [2]f32{f32(x), f32(y)}, i)
+            if int(bezier_point.x) < int(grid_rec.width) && bezier_point.x > 0 && int(bezier_point.y) < int(grid_rec.height) && bezier_point.y > 0 {
+                grid[int(bezier_point.x)][int(bezier_point.y)] = Colour{255, 255, 255, 255}
+            }
+        }
         grid[x][y] = Colour{255, 255, 255, 255}
     }
 
@@ -82,6 +122,8 @@ update :: proc(grid: ^[dynamic][dynamic]Colour, grid_rec: rl.Rectangle) {
             fmt.println("unable to write to test.bif")
         }
     }
+
+    last_mouse_pos = mouse_pos
 }
 
 draw :: proc(grid: [dynamic][dynamic]Colour, grid_rec: rl.Rectangle) {
