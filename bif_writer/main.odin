@@ -4,19 +4,20 @@ import "core:fmt"
 import "core:strings"
 import "core:os"
 
-WIDTH :: 255
-HEIGHT :: 255
+WIDTH: u32 : 500
+HEIGHT: u32 : 500
 
 Colour :: struct {
     r: u8,
     g: u8,
     b: u8,
+    a: u8,
 }
 
-WHITE :: Colour{255, 255, 255}
-RED :: Colour{255, 0, 0}
-GREEN :: Colour{0, 255, 0}
-BLUE :: Colour{0, 0, 255}
+WHITE :: Colour{255, 255, 255, 255}
+RED :: Colour{255, 0, 0, 255}
+GREEN :: Colour{0, 255, 0, 255}
+BLUE :: Colour{0, 0, 255, 255}
 
 fill_image :: proc(colour: Colour) -> (builder: strings.Builder) {
     content, err := strings.builder_init(&builder)
@@ -28,7 +29,7 @@ fill_image :: proc(colour: Colour) -> (builder: strings.Builder) {
 
     for i in 0..<HEIGHT {
         number := WIDTH
-        data := (u32(number) << 24) | (u32(colour.r) << 16) | (u32(colour.g) << 8) | (u32(colour.b))
+        data := (u64(number) << 32) | (u64(colour.r) << 24) | (u64(colour.g) << 16) | (u64(colour.b) << 8) | (u64(colour.a))
 
         fmt.sbprintf(content, "%v\n", data)
     }

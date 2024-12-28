@@ -32,19 +32,20 @@ get_width_height :: proc(content: []byte) -> (width: int, height: int, index: in
     return
 }
 
-expand_image_data :: proc(pixel_data: [dynamic]u32) -> (pixel_info: [dynamic]rl.Color) {
+expand_image_data :: proc(pixel_data: [dynamic]u64) -> (pixel_info: [dynamic]rl.Color) {
     for data, i in pixel_data {
         if data == 0 {
             continue
         }
 
-        no_of_pixels: u32 = (data >> 24) & 0xFF
-        r: u32 = (data >> 16) & 0xFF
-        g: u32 = (data >> 8) & 0xFF
-        b: u32 = data & 0xFF
+        no_of_pixels: u64 = (data >> 32) & 0xFFFFFFFF
+        r: u64 = (data >> 24) & 0xFF
+        g: u64 = (data >> 16) & 0xFF
+        b: u64 = (data >> 8) & 0xFF
+        a: u64 = data & 0xFF
 
-        for j: u32 = 0; j < no_of_pixels; j += 1 {
-            append(&pixel_info, rl.Color{u8(r), u8(g), u8(b), 255})
+        for j: u64 = 0; j < no_of_pixels; j += 1 {
+            append(&pixel_info, rl.Color{u8(r), u8(g), u8(b), u8(a)})
         }
     }
 
@@ -53,15 +54,15 @@ expand_image_data :: proc(pixel_data: [dynamic]u32) -> (pixel_info: [dynamic]rl.
 
 handle_image_data :: proc(image: []byte) -> (pixel_info: [dynamic]rl.Color) {
     buffer: [dynamic]byte
-    pixel_data: [dynamic]u32
+    pixel_data: [dynamic]u64
 
     for ch, _ in image {
         if ch == ' ' {
-            append(&pixel_data, u32(strconv.atoi(string(buffer[:]))))
+            append(&pixel_data, u64(strconv.atoi(string(buffer[:]))))
             clear(&buffer)
         } else if ch == '\n' {
-            append(&pixel_data, u32(strconv.atoi(string(buffer[:]))))
-            append(&pixel_data, u32(0x00000000))
+            append(&pixel_data, u64(strconv.atoi(string(buffer[:]))))
+            append(&pixel_data, u64(0x00000000))
             clear(&buffer)
         } else {
             append(&buffer, ch)
